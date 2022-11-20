@@ -10,6 +10,7 @@ public class GridController : MonoBehaviour
 {
     [SerializeField]
     private Button btnGrid;
+    public Button BtnGrid { get => btnGrid; }
 
     [SerializeField]
     private Text txtGridOwnerIcon;
@@ -34,12 +35,12 @@ public class GridController : MonoBehaviour
     /// </summary>
     /// <param name="no"></param>
     /// <param name="gameManager"></param>
-    public void SetUpgrid(int no,GameManager gameManager)
+    public void SetUpgrid(int no,MainGame mainGame)
     {
         // Gridの通し番号
         gridNo = no;
 
-        btnGrid.onClick.AddListener(() => gameManager.OnnClickGrid(gridNo));
+        btnGrid.onClick.AddListener(() => mainGame.OnClickGrid(gridNo));
 
         // Gird の情報更新
         UpdateGridData(GridOwnerType.None, string.Empty);
