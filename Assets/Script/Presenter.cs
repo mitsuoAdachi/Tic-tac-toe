@@ -14,23 +14,39 @@ public class Presenter : MonoBehaviour
     [SerializeField]
     private Result_Model[] resultModels;
 
+    [SerializeField]
+    private Info_View infoView;
+
+    [SerializeField]
+    private Info_Model infoMode;
+
+    [SerializeField]
+    private Button btnRestart;
+
+    [SerializeField]
+    private Grid_View[] gridViews;
 
     void Start()
     {
-        // TODO ゲームの初期設定を行う。後程修正し、Grid_View の情報を配列で受け取る
-        mainGame.InitialSettings();
+        // ☆①　戻り値になっているメソッドから配列を受け取るように修正しま
+        gridViews = mainGame.InitialSettings();
 
 
-        // TODO リスタートボタンの設定
+        // リスタートボタンの設定
+        btnRestart.OnClickAsObservable()
+            .ThrottleFirst(TimeSpan.FromSeconds(1.0f))
+            .Subscribe(_ => mainGame.Restart()).AddTo(gameObject);
 
 
-        // TODO InfoView の設定
+        // InfoView の設定Info_Model内のReactivePropertyであるInfoMessageの購読を行い、値が更新された際の処理の設定を行う
+        infoMode.InfoMessage.Subscribe(x => infoView.UpdateDispayInfo(x)).AddTo(gameObject);
 
 
         // ゲーム終了状態の監視
         mainGame.IsGameUp.Subscribe(x => {
 
-            // TODO リスタート用のボタンを押せる状態にする
+            // リスタート用のボタンを押せる状態にする
+            btnRestart.interactable = x;// TODO リスタート用のボタンを押せる状態にする
 
             PrepareResult(mainGame.winner);
         }).AddTo(gameObject);
@@ -75,7 +91,24 @@ public class Presenter : MonoBehaviour
         // 勝利数の初期化、ゲーム情報の初期化
         mainGame.ResetGameParameters();
 
-        // TODO Grid の購読を行う
+        //Grid の購読を行う
+        for (int i = 0; i < mainGame.gridModelList.Count; i++)
+        {
+            int index = i;
+
+            // 各 Grid ボタンの購読を行い、クリック(タップ)入力を受付
+            gridViews[index].GetGridButton().OnClickAsObservable()
+                .ThrottleFirst(TimeSpan.FromSeconds(1.0f))
+                .Select(_ => mainGame.gridModelList[index].GridNo)　　// Subscribe の引数用にストリームの情報を gridNo に置き換える 
+                .Subscribe(x => mainGame.OnClickGrid(x))              // x は gridNo
+                .AddTo(this);
+
+            // 各 Grid_Model のオーナー情報を購読し、更新された際には画面表示を更新する
+            mainGame.gridModelList[index].CurrentGridOwnerType
+                .Subscribe(x => gridViews[index].UpdateGridOwnerSymbol(x == GridOwnerType.Player ? "〇" : x == GridOwnerType.Opponent ? "×" : string.Empty))
+                .AddTo(this);
+        }
+
 
     }
 

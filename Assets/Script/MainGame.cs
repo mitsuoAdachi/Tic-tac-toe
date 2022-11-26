@@ -10,10 +10,12 @@ public class MainGame : MonoBehaviour
     private Transform gridSetTran;
 
     [SerializeField]
-    private GridController gridPrefab;
+    private Grid_Model gridModelPrefab;
+
+    public List<Grid_Model> gridModelList = new List<Grid_Model>();
 
     [SerializeField]
-    private GridController[] grids;
+    private Info_Model infoModel;
 
     private int putCount;
     private int gridCount = 9;
@@ -25,23 +27,21 @@ public class MainGame : MonoBehaviour
     /// <summary>
     /// ゲームの初期設定
     /// </summary>
-    public void InitialSettings()
+    public Grid_View[] InitialSettings()
     {
 
-        grids = new GridController[9];
+        List<Grid_View> gridViewList = new List<Grid_View>();
 
         // Grid の生成
         for (int i = 0; i < gridCount; i++)
         {
-
-            // Grid の生成
-            grids[i] = Instantiate(gridPrefab, gridSetTran, false);
-
-            // Grid の初期設定
-            grids[i].SetUpgrid(i, this);
+            Grid_Model gridModel = Instantiate(gridModelPrefab, gridSetTran, false);　　
+            gridModel.SetUpGridModel(i);　　　　　　　　　　　　　　　　　　　　　　
+            gridModelList.Add(gridModel);　　　　　　　　　　　　　　　　　　　　　
+            gridViewList.Add(gridModel.GetComponent<Grid_View>());　　　　　　　　　　　
         }
 
-        // TODO 他にも初期設定の項目がある場合には追加する
+        return gridViewList.ToArray();
 
     }
 
@@ -60,18 +60,16 @@ public class MainGame : MonoBehaviour
 
         // オーナーシンボル(プレイヤーは○印)が置けるか確認
         // 引数で届いている no 変数を配列の要素番号として利用し、クリックした Grid のオーナーシンボルの情報が None であるか判定する
-        if (grids[no].CurrentGridOwnerType == GridOwnerType.None)
+        if (gridModelList[no].CurrentGridOwnerType.Value == GridOwnerType.None)
         {
 
             // 配置した数をカウント
             putCount++;
 
-            // TODO 画面のインフォ表示(配置できないメッセージ)をリセット
+            // 画面のインフォ表示(配置できないメッセージ)をリセット
+            infoModel.UpdateInfoMessage(string.Empty);
 
-
-            // クリックした Grid に○をセット
-            SetOwnerTypeOnGrid(grids[no], GridOwnerType.Player);
-
+            gridModelList[no].CurrentGridOwnerType.Value = GridOwnerType.Player;
 
             // 配置した数の判定。全 Grid が埋まる回数おいたら、勝負付かず引き分け
             if (putCount >= 5 && !IsGameUp.Value)
@@ -89,23 +87,10 @@ public class MainGame : MonoBehaviour
 
             Debug.Log("そこには配置出来ません。");
 
-            // TODO 印が配置できない Grid なので、配置できないメッセージをゲーム画面に表示する
+            //印が配置できないGridなので配置できないメッセージをゲーム画面に表示する
+            infoModel.UpdateInfoMessage("そこには配置出来ません。");
 
         }
-    }
-
-    /// <summary>
-    /// Grid にオーナーシンボル(○×)をセット
-    /// </summary>
-    /// <param name="targetGrid"></param>
-    /// <param name="setOwnerType"></param>
-    private void SetOwnerTypeOnGrid(GridController targetGrid, GridOwnerType setOwnerType)
-    {
-
-        targetGrid.UpdateGridData(setOwnerType, setOwnerType == GridOwnerType.Player ? "〇" : "×");
-
-        // 勝敗結果を判定(メソッドを実行するタイミングが重要)
-        JudgeWinner();
     }
 
     /// <summary>
@@ -124,11 +109,11 @@ public class MainGame : MonoBehaviour
             int gridOwnerTypeNo = i;
 
             // 0,1,2 || 3,4,5 || 6,7,8
-            for (int x = 0; x < 2; x++)
+            for (int x = 0; x < 3; x++)
             {
-                if (grids[x * 3].CurrentGridOwnerType == (GridOwnerType)gridOwnerTypeNo
-                && grids[x * 3 + 1].CurrentGridOwnerType == (GridOwnerType)gridOwnerTypeNo
-                && grids[x * 3 + 2].CurrentGridOwnerType == (GridOwnerType)gridOwnerTypeNo)
+                if (gridModelList[x * 3].CurrentGridOwnerType.Value == (GridOwnerType)gridOwnerTypeNo
+                && gridModelList[x * 3 + 1].CurrentGridOwnerType.Value == (GridOwnerType)gridOwnerTypeNo
+                && gridModelList[x * 3 + 2].CurrentGridOwnerType.Value == (GridOwnerType)gridOwnerTypeNo)
                 {
 
                     winner = (GridOwnerType)gridOwnerTypeNo;
@@ -154,9 +139,9 @@ public class MainGame : MonoBehaviour
             // 0,3,6 || 1,4,7 || 2,5,8
             for (int x = 0; x < 3; x++)
             {
-                if (grids[x].CurrentGridOwnerType == (GridOwnerType)gridOwnerTypeNo
-                && grids[x + 3].CurrentGridOwnerType == (GridOwnerType)gridOwnerTypeNo
-                && grids[x + 6].CurrentGridOwnerType == (GridOwnerType)gridOwnerTypeNo)
+                if (gridModelList[x].CurrentGridOwnerType.Value == (GridOwnerType)gridOwnerTypeNo
+                && gridModelList[x + 3].CurrentGridOwnerType.Value == (GridOwnerType)gridOwnerTypeNo
+                && gridModelList[x + 6].CurrentGridOwnerType.Value == (GridOwnerType)gridOwnerTypeNo)
                 {
 
                     winner = (GridOwnerType)gridOwnerTypeNo;
@@ -182,9 +167,9 @@ public class MainGame : MonoBehaviour
             // 2, 4, 6 ||  0, 4, 8
             for (int x = -1; x < 1; x++)
             {
-                if (grids[0 - x * 2].CurrentGridOwnerType == (GridOwnerType)gridOwnerTypeNo
-                && grids[4].CurrentGridOwnerType == (GridOwnerType)gridOwnerTypeNo
-                && grids[8 + x * 2].CurrentGridOwnerType == (GridOwnerType)gridOwnerTypeNo)
+                if (gridModelList[0 - x * 2].CurrentGridOwnerType.Value == (GridOwnerType)gridOwnerTypeNo
+                && gridModelList[4].CurrentGridOwnerType.Value == (GridOwnerType)gridOwnerTypeNo
+                && gridModelList[8 + x * 2].CurrentGridOwnerType.Value == (GridOwnerType)gridOwnerTypeNo)
                 {
 
                     winner = (GridOwnerType)gridOwnerTypeNo;
@@ -226,15 +211,17 @@ public class MainGame : MonoBehaviour
         {
             Debug.Log("test2");
 
-            // ランダムな Grid の番号を選択
-            int randomPieceIndex = Random.Range(0, grids.Length);
+            int randomPieceIndex = Random.Range(0, gridModelList.Count);
 
-            // その Grid にオーナーシンボルがなければ×を設置
-            if (grids[randomPieceIndex].CurrentGridOwnerType == GridOwnerType.None)
+            if (gridModelList[randomPieceIndex].CurrentGridOwnerType.Value == GridOwnerType.None)
             {
-                SetOwnerTypeOnGrid(grids[randomPieceIndex], GridOwnerType.Opponent);
-                break;
+
+                // Grid_Model の ReactiveProperty の値を更新
+                gridModelList[randomPieceIndex].CurrentGridOwnerType.Value = GridOwnerType.Opponent;
+
             }
+            JudgeWinner();
+            break;
         }
     }
 
@@ -248,5 +235,20 @@ public class MainGame : MonoBehaviour
         IsGameUp.Value = false;
 
         putCount = 0;
+    }
+
+    /// <summary>
+    /// 次のゲームを再開する準備
+    /// </summary>
+    public void Restart()
+    {
+
+        for (int i = 0; i < gridModelList.Count; i++)
+        {
+            gridModelList[i].CurrentGridOwnerType.Value = GridOwnerType.None;
+        }
+
+        // ゲームに利用する情報の初期化
+        ResetGameParameters();
     }
 }
